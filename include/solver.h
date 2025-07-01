@@ -1,82 +1,5 @@
 #include "sudoku.h"
-#include "countlines.h"
-
-#define PUZZLE_LINE_SIZE_BYTES 82
-#define CORRECT_SUM 45
-
-bool double_check(Sudoku* s) {
-    for (int i = 0; i < 9; i++) {
-        int sum = 0;
-        Cell** row_cells = s->rows[i].cells;
-        for (int j = 0; j < 9; j++) {
-            sum += row_cells[j]->value;
-        }
-        if (sum != CORRECT_SUM) return False;
-    }
-
-    for (int i = 0; i < 9; i++) {
-        int sum = 0;
-        Cell** col_cells = s->cols[i].cells;
-        for (int j = 0; j < 9; j++) {
-            sum += col_cells[j]->value;
-        }
-        if (sum != CORRECT_SUM) return False;
-    }
-
-    return True;
-}
-
-int main(int argc, char* argv[]) {
-    Sudoku* puzzle = (Sudoku*)malloc(sizeof(Sudoku));
-    
-    char* filename;
-    if (argc == 2) filename = argv[1];
-    else filename = "data/puzzles7_serg_benchmark";
-
-    FILE* f = fopen(filename, "r");
-    
-    float total_solved = 0;
-    float total_incorrect = 0;
-    float total_puzzles = count_lines(f);
-    bool do_visible = False;
-
-    fclose(f);
-
-    for (int i = 0; i < total_puzzles; i++) {
-        // int i = 0;
-        read_puzzle(filename, i, puzzle);
-        // print_sudoku(puzzle);
-        bool could_solve = solve_sudoku(puzzle, do_visible);
-    
-        if (could_solve) {
-            // print("Solved puzzle %d." NL, i);
-            if (double_check(puzzle)) {
-                total_solved++;
-            } else {
-                total_incorrect++;
-                // print("WARN: Incorrectly completed puzzle %d." NL, i);
-            }
-        }
-        // else print("Could not solve puzzle %d." NL, i);
-        if (do_visible) sleep(2);
-    }
-
-    print(
-        "[%s]:" NL
-        " - Solved %d out of %d puzzles" NL
-        " - %d puzzles could not be solved" NL
-        " - %d puzzles were completed incorrectly" NL
-        " - Solve rate: %.3f%%" NL, 
-        filename,
-        (int)total_solved, 
-        (int)total_puzzles, 
-        (int)(total_puzzles-total_solved), 
-        (int)total_incorrect,
-        (total_solved / total_puzzles) * 100
-    );
-
-    return 0;
-}
+#include "bool.h"
 
 void fill(Cell* cells[9]) {
     bool was_found[9] = {};
@@ -245,63 +168,13 @@ bool solve_sudoku(Sudoku* s, bool do_visible) {
         fill_possibilities(s);
         
         if(
-            run_check(s, do_visible, SINGLE_POSSIBLE,    &best_n_filled) ||
-            run_check(s, do_visible, EXCLUSIVE_POSSIBLE, &best_n_filled) ||
-            run_check(s, do_visible, COLUMN_ELIMINATION, &best_n_filled) ||
-            run_check(s, do_visible, ROW_ELIMINATION,    &best_n_filled)
+            run_check(s, do_visible, SINGLE_POSSIBLE,    &best_n_filled)
+            // run_check(s, do_visible, EXCLUSIVE_POSSIBLE, &best_n_filled)
+            // run_check(s, do_visible, COLUMN_ELIMINATION, &best_n_filled) ||
+            // run_check(s, do_visible, ROW_ELIMINATION,    &best_n_filled)
         ) continue;
         
         return False;
     }
     return True;
-}
-
-void link_ninths(Sudoku* s) {
-    for (int i = 0; i < 81; i++) {
-        int x = (i % 9) % 3, y = (i % 9) / 3;
-        Ninth* n = &s->ninths[y][x];
-        int row_idx[3] = {3*y, 3*y+1, 3*y+2};
-        int col_idx[3] = {3*x, 3*x+1, 3*x+2};
-
-        x = (i / 9) % 3, y = (i / 9) / 3;
-        int sx = col_idx[y];
-        int sy = row_idx[x];
-        n->cells[x][y] = s->cols[sx].cells[sy];
-        n->cells_lin[(3*x) + y] = s->cols[sx].cells[sy];
-    }
-}
-
-void read_puzzle(char* filename, int line_number, Sudoku* output) {
-    FILE* puzzle_file = fopen(filename, "r");
-    fseek(puzzle_file, line_number * PUZZLE_LINE_SIZE_BYTES, 0);
-    output->is_solved = False;
-
-    int x = 0, y = 0;
-    for (char c = getc(puzzle_file); c != '\n'; c = getc(puzzle_file)) {
-        if (c == '.') c = '0';
-        int val = ((int)c - 48);
-
-        Cell* new_cell = (Cell*)malloc(sizeof(Cell));
-        *new_cell = (Cell){
-            .value = val,
-            .x = x,
-            .y = y,
-            .given = (val != 0),
-            .empty = (val == 0),
-            .might_be = {1,1,1,1,1,1,1,1,1}
-        };
-
-        output->cols[x].cells[y] = new_cell;
-        output->rows[y].cells[x] = new_cell;
-
-        x++;
-        if (x == 9) {
-            x = 0;
-            y++;
-        }
-    }
-
-    fclose(puzzle_file);
-
-    link_ninths(output);
 }

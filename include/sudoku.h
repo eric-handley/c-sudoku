@@ -1,12 +1,10 @@
 #pragma once
+
 #define _GNU_SOURCE
-#include "defn.h"
 #include <pthread.h>
-#include <stdio.h>
-#include <malloc.h>
 #include <stdlib.h>
-#include <time.h>
-#include <unistd.h>
+#include "bool.h"
+#include "box.h"
 
 #define s_TO_μs (1e6)
 #define sleep(n) usleep(n * s_TO_μs)
@@ -51,17 +49,14 @@ typedef struct Sudoku
     bool is_solved;
 } Sudoku;
 
-bool solve_sudoku(Sudoku *s, bool do_visible);
-void read_puzzle(char *filename, int line_number, Sudoku *output);
-
 void print_sudoku(Sudoku* s) {
     print(T_BORDER NL);
     
     for (int y = 0; y < 9; y++) {
         print(THICK_V_BAR);
         for (int x = 0; x < 9; x++) {
-            int val = s->cols[x].cells[y]->value;
-            // int val = s->rows[y].cells[x]->value;
+            // int val = s->cols[x].cells[y]->value;
+            int val = s->rows[y].cells[x]->value;
             print(CELL_PAD);
             if (val) printf("%d", val);
             else print (CELL_PAD);

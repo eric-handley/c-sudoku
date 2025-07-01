@@ -9,7 +9,3 @@
 #define THIN_V_BAR    "│"
 #define CELL_PAD      " "
 
-typedef enum bool {
-    False,
-    True
-} bool;
