@@ -13,93 +13,56 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
-void fill_ninth_possibilities(Sudoku* s) {
-    for (int x = 0; x < 3; x++) {
-        for (int y = 0; y < 3; y++) {
-            Ninth* n = &s->ninths[x][y];
-            bool was_found[9] = {};
-            for (int i = 0; i < 9; i++) {
-                int val = n->cells_lin[i]->value;
-                int val_idx = val - 1;
-                was_found[val_idx] = was_found[val_idx] || val != 0;
-            }
-            for (int i = 0; i < 9; i++) {
-                Cell* c = n->cells_lin[i];
-                if (c->given) continue;
-                for (int j = 0; j < 9; j++) {
-                    c->might_be[j] = c->might_be[j] && !was_found[j];
-                }
-
-            }
+void generic_fill(Cell* cells[9]) {
+    bool was_found[9] = {};
+    for (int i = 0; i < 9; i++) {
+        int val = cells[i]->value;
+        int val_idx = val - 1;
+        was_found[val_idx] = was_found[val_idx] || val != 0;
+    }
+    for (int i = 0; i < 9; i++) {
+        Cell* c = cells[i];
+        if (c->given) continue;
+        for (int j = 0; j < 9; j++) {
+            c->might_be[j] = c->might_be[j] && !was_found[j];
         }
     }
 }
 
-void fill_row_possibilities(Sudoku* s) {
-    for (int y = 0; y < 9; y++) {
-        Row* r = &s->rows[y];
-        bool was_found[9] = {};
-        for (int x = 0; x < 9; x++) {
-            int val = r->cells[x]->value;
-            int val_idx = val - 1;
-            was_found[val_idx] = was_found[val_idx] || val != 0;
-        }
+void fill_possibilities(Sudoku* s) {
+    for (int i = 0; i < 9; i++) {
+        Row* r = &s->rows[i];
+        generic_fill(r->cells);
 
-        for (int x = 0; x < 9; x++) {
-            Cell* c = r->cells[x];
-            if (c->given) continue;
-            for (int i = 0; i < 9; i++) {
-                c->might_be[i] = c->might_be[i] && !was_found[i];
-            }
-        }
+        Col* c = &s->cols[i];
+        generic_fill(c->cells);
+
+        Ninth* n = &s->ninths[i % 3][(int)i / 3];
+        generic_fill(n->cells_lin);
     }
-}
-
-void fill_col_possibilities(Sudoku* s) {
-    for (int x = 0; x < 9; x++) {
-        Col* col = &s->cols[x];
-        bool was_found[9] = {};
-        for (int y = 0; y < 9; y++) {
-            int val = col->cells[y]->value;
-            int val_idx = val - 1;
-            was_found[val_idx] = was_found[val_idx] || val != 0;
-        }
-
-        for (int y = 0; y < 9; y++) {
-            Cell* c = col->cells[y];
-            if (c->given) continue;
-            for (int i = 0; i < 9; i++) {
-                c->might_be[i] = c->might_be[i] && !was_found[i];
-            }
-        }
-    }
-    return;
 }
 
 bool solve_sudoku(Sudoku* s, bool do_visible) {
-    fill_ninth_possibilities(s);
-    fill_row_possibilities(s);
-    fill_col_possibilities(s);
-    return False;
+    fill_possibilities(s);
+    return True;
 }
 
 void link_ninths(Sudoku* s) {
-    for (int x = 0; x < 3; x++) {
-        for (int y = 0; y < 3; y++) {
-            Ninth* n = &s->ninths[y][x];
-            int row_idx[3] = {3*y, 3*y+1, 3*y+2};
-            int col_idx[3] = {3*x, 3*x+1, 3*x+2};
+    for (int i = 0; i < 81; i++) {
+        int x = (i % 9) % 3, y = (int)(i % 9) / 3;
+        Ninth* n = &s->ninths[y][x];
+        int row_idx[3] = {3*y, 3*y+1, 3*y+2};
+        int col_idx[3] = {3*x, 3*x+1, 3*x+2};
 
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 3; j++) {
-                    int sx = col_idx[j];
-                    int sy = row_idx[i];
-                    n->cells[i][j] = s->cols[sx].cells[sy];
-                    n->cells_lin[(3*i) + j] = s->cols[sx].cells[sy];
-                }
-            }
+        for (int j = 0; j < 9; j++) {
+            x = j % 3, y = (int)j / 3;
+            int sx = col_idx[y];
+            int sy = row_idx[x];
+            n->cells[x][y] = s->cols[sx].cells[sy];
+            n->cells_lin[(3*x) + y] = s->cols[sx].cells[sy];
         }
     }
+
 }
 
 void read_puzzle(char* filename, int line_number, Sudoku* output) {
