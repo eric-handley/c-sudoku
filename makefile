@@ -1,6 +1,6 @@
 .PHONY: sudoku sudoku-strict
 
-default: sudoku-strict run clean
+default: sudoku-strict run
 
 sudoku:
 	@gcc -Wall -std=c18 -o sudoku.o sudoku.c 
