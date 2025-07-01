@@ -4,6 +4,7 @@
 void fill(Cell* cells[9]) {
     bool was_found[9] = {};
     for (int i = 0; i < 9; i++) {
+        if (cells[i]->empty) continue;
         int val = cells[i]->value;
         int val_idx = val - 1;
         was_found[val_idx] = was_found[val_idx] || val != 0;
@@ -143,7 +144,7 @@ bool run_check(Sudoku* s, bool do_visible, CheckType check, int* best_n_filled) 
                 if (do_visible && was_filled) {
                     system("clear");
                     print_sudoku(s);
-                    sleep(1);
+                    sleep(0.5);
                 }
             }
         }
@@ -168,10 +169,10 @@ bool solve_sudoku(Sudoku* s, bool do_visible) {
         fill_possibilities(s);
         
         if(
-            run_check(s, do_visible, SINGLE_POSSIBLE,    &best_n_filled)
-            // run_check(s, do_visible, EXCLUSIVE_POSSIBLE, &best_n_filled)
-            // run_check(s, do_visible, COLUMN_ELIMINATION, &best_n_filled) ||
-            // run_check(s, do_visible, ROW_ELIMINATION,    &best_n_filled)
+            run_check(s, do_visible, SINGLE_POSSIBLE,    &best_n_filled) ||
+            run_check(s, do_visible, EXCLUSIVE_POSSIBLE, &best_n_filled) ||
+            run_check(s, do_visible, COLUMN_ELIMINATION, &best_n_filled) ||
+            run_check(s, do_visible, ROW_ELIMINATION,    &best_n_filled)
         ) continue;
         
         return False;

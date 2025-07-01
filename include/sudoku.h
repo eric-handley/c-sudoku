@@ -1,14 +1,9 @@
 #pragma once
 
-#define _GNU_SOURCE
 #include <pthread.h>
 #include <stdlib.h>
 #include "bool.h"
-#include "box.h"
-
-#define s_TO_μs (1e6)
-#define sleep(n) usleep(n * s_TO_μs)
-#define print printf
+#include "printing.h"
 
 typedef enum StructureType {
     COL,
