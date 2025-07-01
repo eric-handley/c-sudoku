@@ -8,7 +8,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#define s_TO_μs * (1e6)
+#define s_TO_μs (1e6)
+#define sleep(n) usleep(n * s_TO_μs)
 #define print printf
 
 typedef enum StructureType {
@@ -47,6 +48,7 @@ typedef struct Sudoku
     Row rows[9];
     Col cols[9];
     Ninth ninths[3][3];
+    bool is_solved;
 } Sudoku;
 
 bool solve_sudoku(Sudoku *s, bool do_visible);

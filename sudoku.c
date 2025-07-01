@@ -1,14 +1,37 @@
 #include "sudoku.h"
+#include "countlines.h"
 
 #define PUZZLE_LINE_SIZE_BYTES 82
 
 int main(int argc, char* argv[]) {
     Sudoku* puzzle = (Sudoku*)malloc(sizeof(Sudoku));
     
-    read_puzzle("data/puzzles0_kaggle", 0, puzzle);
-    system("clear");
-    print_sudoku(puzzle);
-    solve_sudoku(puzzle, True);
+    char* filename;
+    if (argc == 2) filename = argv[1];
+    else filename = "data/puzzles0_kaggle";
+
+    FILE* f = fopen(filename, "r");
+    
+    float total_solved = 0;
+    float total_puzzles = count_lines(f);
+    bool do_visible = False;
+
+    fclose(f);
+
+    for (int i = 0; i < total_puzzles; i++) {
+        // int i = 983;
+        read_puzzle(filename, i, puzzle);
+        bool could_solve = solve_sudoku(puzzle, do_visible);
+    
+        if (could_solve) {
+            // print("Solved puzzle %d." NL, i);
+            total_solved++;
+        }
+        // else print("Could not solve puzzle %d." NL, i);
+        if (do_visible) sleep(2);
+    }
+
+    print("Solved %d out of %d puzzles. Solve rate: %f%%" NL, (int)total_solved, (int)total_puzzles, total_solved / total_puzzles);
 
     return 0;
 }
@@ -31,19 +54,81 @@ void generic_fill(Cell* cells[9]) {
 
 void fill_possibilities(Sudoku* s) {
     for (int i = 0; i < 9; i++) {
+        Ninth* n = &s->ninths[i % 3][i / 3];
+        generic_fill(n->cells_lin);
+
         Row* r = &s->rows[i];
         generic_fill(r->cells);
 
         Col* c = &s->cols[i];
         generic_fill(c->cells);
-
-        Ninth* n = &s->ninths[i % 3][i / 3];
-        generic_fill(n->cells_lin);
     }
 }
 
+bool set_single_possibilities(Cell* c) {
+    bool can_set = False;
+    int can_set_to = 1;
+    for (int i = 0; i < 9; i++) {
+        if (c->might_be[i]) {
+            if (!can_set) {
+                can_set = True;
+                can_set_to += i;
+            } else {
+                return False;
+            }
+        }
+    }
+
+    c->value = can_set_to;
+    c->empty = False;
+    return True;
+}
+
+int check_single_possibilities(Sudoku* s, bool do_visible) {
+    int total_filled = 0;
+    for (int i = 0; i < 9; i++) {
+        Cell** cells = s->ninths[i / 3][i % 3].cells_lin;
+
+        for (int j = 0; j < 9; j++) {
+            if(!cells[j]->empty || cells[j]->given) total_filled++;
+            else {
+                total_filled += set_single_possibilities(cells[j]);
+                if (do_visible) {
+                    system("clear");
+                    print_sudoku(s);
+                    sleep(0.05);
+                }
+            }
+        }
+    }
+    return total_filled;
+}
+
 bool solve_sudoku(Sudoku* s, bool do_visible) {
-    fill_possibilities(s);
+    if (do_visible) {
+        system("clear");
+        print_sudoku(s);
+        sleep(0.05);
+    }
+
+    int n_filled = 0;
+    int n_filled_last = 0;
+    while (!s->is_solved) {
+        fill_possibilities(s);
+
+        n_filled_last = n_filled;
+        n_filled = check_single_possibilities(s, do_visible);
+
+        if (n_filled == n_filled_last) {
+            // n_filled = check_exclusive_possibilities(s, do_visible); // Check if any square is the only one in its ninth with a possible value
+
+            if (n_filled == n_filled_last) {
+                return False;
+            }
+        } 
+        
+        if (n_filled == 81) s->is_solved = True;
+    }
     return True;
 }
 
@@ -65,6 +150,7 @@ void link_ninths(Sudoku* s) {
 void read_puzzle(char* filename, int line_number, Sudoku* output) {
     FILE* puzzle_file = fopen(filename, "r");
     fseek(puzzle_file, line_number * PUZZLE_LINE_SIZE_BYTES, 0);
+    output->is_solved = False;
 
     int x = 0, y = 0;
     for (char c = getc(puzzle_file); c != '\n'; c = getc(puzzle_file)) {
@@ -90,6 +176,8 @@ void read_puzzle(char* filename, int line_number, Sudoku* output) {
             y++;
         }
     }
+
+    fclose(puzzle_file);
 
     link_ninths(output);
 }
