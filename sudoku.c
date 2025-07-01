@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
     fclose(f);
 
     for (int i = 0; i < total_puzzles; i++) {
-        // int i = 983;
+        // int i = 19751;
         read_puzzle(filename, i, puzzle);
         bool could_solve = solve_sudoku(puzzle, do_visible);
     
@@ -115,13 +115,16 @@ bool fill_exlusive_possibilities(Cell** cells, int idx) {
     Cell* c = cells[idx];
     
     for (int i = 0; i < 9; i++) {
+        bool try_next = False;
         if(c->might_be[i]) {
 
             for (int j = 0; j < 9; j++) {
                 if (j == idx) continue;
                 if (!cells[j]->empty) continue;
-                if(cells[j]->might_be[i]) return False;
+                if(cells[j]->might_be[i]) try_next = True;
             }
+
+            if (try_next) continue;
 
             c->value = i + 1;
             c->empty = False;
