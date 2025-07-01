@@ -2,47 +2,83 @@
 #include "countlines.h"
 
 #define PUZZLE_LINE_SIZE_BYTES 82
+#define CORRECT_SUM 45
+
+bool double_check(Sudoku* s) {
+    for (int i = 0; i < 9; i++) {
+        int sum = 0;
+        Cell** row_cells = s->rows[i].cells;
+        for (int j = 0; j < 9; j++) {
+            sum += row_cells[j]->value;
+        }
+        if (sum != CORRECT_SUM) return False;
+    }
+
+    for (int i = 0; i < 9; i++) {
+        int sum = 0;
+        Cell** col_cells = s->cols[i].cells;
+        for (int j = 0; j < 9; j++) {
+            sum += col_cells[j]->value;
+        }
+        if (sum != CORRECT_SUM) return False;
+    }
+
+    return True;
+}
 
 int main(int argc, char* argv[]) {
     Sudoku* puzzle = (Sudoku*)malloc(sizeof(Sudoku));
     
     char* filename;
     if (argc == 2) filename = argv[1];
-    else filename = "data/puzzles0_kaggle";
+    else filename = "data/puzzles7_serg_benchmark";
 
     FILE* f = fopen(filename, "r");
     
     float total_solved = 0;
+    float total_incorrect = 0;
     float total_puzzles = count_lines(f);
     bool do_visible = False;
 
     fclose(f);
 
     for (int i = 0; i < total_puzzles; i++) {
-        // int i = 19751;
+        // int i = 0;
         read_puzzle(filename, i, puzzle);
+        // print_sudoku(puzzle);
         bool could_solve = solve_sudoku(puzzle, do_visible);
     
         if (could_solve) {
             // print("Solved puzzle %d." NL, i);
-            total_solved++;
+            if (double_check(puzzle)) {
+                total_solved++;
+            } else {
+                total_incorrect++;
+                // print("WARN: Incorrectly completed puzzle %d." NL, i);
+            }
         }
-        else print("Could not solve puzzle %d." NL, i);
+        // else print("Could not solve puzzle %d." NL, i);
         if (do_visible) sleep(2);
     }
 
     print(
-        "Solved %d out of %d puzzles. Could not solve %d. Solve rate: %.3f%%" NL, 
+        "[%s]:" NL
+        " - Solved %d out of %d puzzles" NL
+        " - %d puzzles could not be solved" NL
+        " - %d puzzles were completed incorrectly" NL
+        " - Solve rate: %.3f%%" NL, 
+        filename,
         (int)total_solved, 
         (int)total_puzzles, 
         (int)(total_puzzles-total_solved), 
+        (int)total_incorrect,
         (total_solved / total_puzzles) * 100
     );
 
     return 0;
 }
 
-void generic_fill(Cell* cells[9]) {
+void fill(Cell* cells[9]) {
     bool was_found[9] = {};
     for (int i = 0; i < 9; i++) {
         int val = cells[i]->value;
@@ -61,17 +97,17 @@ void generic_fill(Cell* cells[9]) {
 void fill_possibilities(Sudoku* s) {
     for (int i = 0; i < 9; i++) {
         Ninth* n = &s->ninths[i % 3][i / 3];
-        generic_fill(n->cells_lin);
+        fill(n->cells_lin);
 
         Row* r = &s->rows[i];
-        generic_fill(r->cells);
+        fill(r->cells);
 
         Col* c = &s->cols[i];
-        generic_fill(c->cells);
+        fill(c->cells);
     }
 }
 
-bool fill_single_possibilities(Cell* c) {
+bool check_single_possibilities(Cell* c) {
     bool can_set = False;
     int can_set_to = 1;
     for (int i = 0; i < 9; i++) {
@@ -90,7 +126,7 @@ bool fill_single_possibilities(Cell* c) {
     return True;
 }
 
-bool fill_exlusive_possibilities(Cell** cells, int idx) {
+bool check_exclusive_possibilities(Cell** cells, int idx) {
     Cell* c = cells[idx];
     
     for (int i = 0; i < 9; i++) {
@@ -100,7 +136,7 @@ bool fill_exlusive_possibilities(Cell** cells, int idx) {
             for (int j = 0; j < 9; j++) {
                 if (j == idx) continue;
                 if (!cells[j]->empty) continue;
-                if(cells[j]->might_be[i]) try_next = True;
+                if (cells[j]->might_be[i]) try_next = True;
             }
 
             if (try_next) continue;
@@ -114,6 +150,32 @@ bool fill_exlusive_possibilities(Cell** cells, int idx) {
     return False;
 }
 
+bool check_elimination(Cell* c, Cell** cells, bool do_columns) {
+    int ninth;
+    bool did_work = False;
+    if (do_columns) ninth = c->y / 3;
+    else ninth = c->x / 3;
+    
+    for (int i = 0; i < 9; i++) {
+        if(c->might_be[i]) {
+            int total_found = 0;
+
+            for (int j = 0; j < 9; j++) {
+                Cell* check_cell = cells[j];
+                if (j / 3 == ninth) continue;
+                if (!check_cell->empty) continue;
+                if (check_cell->might_be[i]) total_found++;
+
+                c->might_be[i] = !(total_found == 2);
+                did_work = total_found == 2;
+            }
+
+        }
+    }
+    
+    return did_work;
+}
+
 typedef enum CheckType {
     SINGLE_POSSIBLE,
     EXCLUSIVE_POSSIBLE,
@@ -122,7 +184,8 @@ typedef enum CheckType {
 } CheckType;
 
 bool run_check(Sudoku* s, bool do_visible, CheckType check, int* best_n_filled) {
-    int total_filled = 0;
+    int total_filled = 0, total_work = 0;
+    bool work_done = False;
     for (int i = 0; i < 9; i++) {
         Cell** cells = s->ninths[i / 3][i % 3].cells_lin;
 
@@ -134,36 +197,40 @@ bool run_check(Sudoku* s, bool do_visible, CheckType check, int* best_n_filled) 
 
                 switch (check) {
                     case SINGLE_POSSIBLE:
-                        was_filled = fill_single_possibilities(c);
+                        was_filled = check_single_possibilities(c);
                         break;
                     
                     case EXCLUSIVE_POSSIBLE:
-                        was_filled = fill_exlusive_possibilities(cells, j);
+                        was_filled = check_exclusive_possibilities(cells, j);
                         break;
 
                     case COLUMN_ELIMINATION:
-                        // was_filled = fill_by_column_elim(c, s->cols[c->x]);
+                        work_done = check_elimination(c, s->cols[c->x].cells, True);
                         break;
                     
+                    case ROW_ELIMINATION:
+                        work_done = check_elimination(c, s->rows[c->y].cells, False);
+
                     default:
                         break;
                 }
 
+                total_work += work_done;
                 total_filled += was_filled;
                 if (do_visible && was_filled) {
                     system("clear");
                     print_sudoku(s);
-                    sleep(0.05);
+                    sleep(1);
                 }
             }
         }
     }
 
-    if(total_filled == *best_n_filled) return False;
-    else {
+    if(total_filled != *best_n_filled || total_work) {
         *best_n_filled = total_filled;
         return True;
-    }
+    } 
+    return False;
 }
 
 bool solve_sudoku(Sudoku* s, bool do_visible) {
@@ -178,8 +245,10 @@ bool solve_sudoku(Sudoku* s, bool do_visible) {
         fill_possibilities(s);
         
         if(
-            run_check(s, do_visible, SINGLE_POSSIBLE, &best_n_filled) ||
-            run_check(s, do_visible, EXCLUSIVE_POSSIBLE, &best_n_filled)
+            run_check(s, do_visible, SINGLE_POSSIBLE,    &best_n_filled) ||
+            run_check(s, do_visible, EXCLUSIVE_POSSIBLE, &best_n_filled) ||
+            run_check(s, do_visible, COLUMN_ELIMINATION, &best_n_filled) ||
+            run_check(s, do_visible, ROW_ELIMINATION,    &best_n_filled)
         ) continue;
         
         return False;
