@@ -37,7 +37,7 @@ void fill_possibilities(Sudoku* s) {
         Col* c = &s->cols[i];
         generic_fill(c->cells);
 
-        Ninth* n = &s->ninths[i % 3][(int)i / 3];
+        Ninth* n = &s->ninths[i % 3][i / 3];
         generic_fill(n->cells_lin);
     }
 }
@@ -49,20 +49,17 @@ bool solve_sudoku(Sudoku* s, bool do_visible) {
 
 void link_ninths(Sudoku* s) {
     for (int i = 0; i < 81; i++) {
-        int x = (i % 9) % 3, y = (int)(i % 9) / 3;
+        int x = (i % 9) % 3, y = (i % 9) / 3;
         Ninth* n = &s->ninths[y][x];
         int row_idx[3] = {3*y, 3*y+1, 3*y+2};
         int col_idx[3] = {3*x, 3*x+1, 3*x+2};
 
-        for (int j = 0; j < 9; j++) {
-            x = j % 3, y = (int)j / 3;
-            int sx = col_idx[y];
-            int sy = row_idx[x];
-            n->cells[x][y] = s->cols[sx].cells[sy];
-            n->cells_lin[(3*x) + y] = s->cols[sx].cells[sy];
-        }
+        x = (i / 9) % 3, y = (i / 9) / 3;
+        int sx = col_idx[y];
+        int sy = row_idx[x];
+        n->cells[x][y] = s->cols[sx].cells[sy];
+        n->cells_lin[(3*x) + y] = s->cols[sx].cells[sy];
     }
-
 }
 
 void read_puzzle(char* filename, int line_number, Sudoku* output) {
