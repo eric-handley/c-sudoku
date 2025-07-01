@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
             // print("Solved puzzle %d." NL, i);
             total_solved++;
         }
-        // else print("Could not solve puzzle %d." NL, i);
+        else print("Could not solve puzzle %d." NL, i);
         if (do_visible) sleep(2);
     }
 
@@ -90,27 +90,6 @@ bool fill_single_possibilities(Cell* c) {
     return True;
 }
 
-int check_single_possibilities(Sudoku* s, bool do_visible) {
-    int total_filled = 0;
-    for (int i = 0; i < 9; i++) {
-        Cell** cells = s->ninths[i / 3][i % 3].cells_lin;
-
-        for (int j = 0; j < 9; j++) {
-            if(!cells[j]->empty || cells[j]->given) total_filled++;
-            else {
-                bool was_filled = fill_single_possibilities(cells[j]);
-                total_filled += was_filled;
-                if (do_visible && was_filled) {
-                    system("clear");
-                    print_sudoku(s);
-                    sleep(0.05);
-                }
-            }
-        }
-    }
-    return total_filled;
-}
-
 bool fill_exlusive_possibilities(Cell** cells, int idx) {
     Cell* c = cells[idx];
     
@@ -135,15 +114,41 @@ bool fill_exlusive_possibilities(Cell** cells, int idx) {
     return False;
 }
 
-int check_exclusive_possibilities(Sudoku* s, bool do_visible) {
+typedef enum CheckType {
+    SINGLE_POSSIBLE,
+    EXCLUSIVE_POSSIBLE,
+    COLUMN_ELIMINATION,
+    ROW_ELIMINATION
+} CheckType;
+
+bool run_check(Sudoku* s, bool do_visible, CheckType check, int* best_n_filled) {
     int total_filled = 0;
     for (int i = 0; i < 9; i++) {
         Cell** cells = s->ninths[i / 3][i % 3].cells_lin;
 
         for (int j = 0; j < 9; j++) {
-            if(!cells[j]->empty || cells[j]->given) total_filled++;
+            Cell* c = cells[j];
+            if(!c->empty || c->given) total_filled++;
             else {
-                bool was_filled = fill_exlusive_possibilities(cells, j);
+                bool was_filled = False;
+
+                switch (check) {
+                    case SINGLE_POSSIBLE:
+                        was_filled = fill_single_possibilities(c);
+                        break;
+                    
+                    case EXCLUSIVE_POSSIBLE:
+                        was_filled = fill_exlusive_possibilities(cells, j);
+                        break;
+
+                    case COLUMN_ELIMINATION:
+                        // was_filled = fill_by_column_elim(c, s->cols[c->x]);
+                        break;
+                    
+                    default:
+                        break;
+                }
+
                 total_filled += was_filled;
                 if (do_visible && was_filled) {
                     system("clear");
@@ -153,7 +158,12 @@ int check_exclusive_possibilities(Sudoku* s, bool do_visible) {
             }
         }
     }
-    return total_filled;
+
+    if(total_filled == *best_n_filled) return False;
+    else {
+        *best_n_filled = total_filled;
+        return True;
+    }
 }
 
 bool solve_sudoku(Sudoku* s, bool do_visible) {
@@ -163,23 +173,16 @@ bool solve_sudoku(Sudoku* s, bool do_visible) {
         sleep(0.05);
     }
 
-    int n_filled = 0;
-    int n_filled_last = 0;
-    while (!s->is_solved) {
+    int best_n_filled = 0;
+    while (best_n_filled < 81) {
         fill_possibilities(s);
-
-        n_filled_last = n_filled;
-        n_filled = check_single_possibilities(s, do_visible);
-
-        if (n_filled == n_filled_last) {
-            n_filled = check_exclusive_possibilities(s, do_visible); // Check if any square is the only one in its ninth with a possible value
-
-            if (n_filled == n_filled_last) {
-                return False;
-            }
-        } 
         
-        if (n_filled == 81) s->is_solved = True;
+        if(
+            run_check(s, do_visible, SINGLE_POSSIBLE, &best_n_filled) ||
+            run_check(s, do_visible, EXCLUSIVE_POSSIBLE, &best_n_filled)
+        ) continue;
+        
+        return False;
     }
     return True;
 }
