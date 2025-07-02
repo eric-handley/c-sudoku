@@ -20,7 +20,7 @@ bool check_solvable_by_cells(Cell** cells, bool print_errors) {
 
     for (int j = 0; j < 9; j++) {
         if (!found_might_be[j]) {
-            if (print_errors) print(RED "WARN: " RST "Cannot fill any %d's" NL, j + 1);
+            if (print_errors) print(RED "WARN" RST ": Checker - cannot fill any %d's" NL, j + 1);
             return False;
         }
     }
@@ -31,15 +31,15 @@ bool check_solvable_by_cells(Cell** cells, bool print_errors) {
 bool is_solvable(Sudoku* s_possibilities_filled, bool print_errors) {
     for (int i = 0; i < 9; i++) {
         if(!check_solvable_by_cells(s_possibilities_filled->ninths[i % 3][i / 3].cells_lin, print_errors)) {
-            if (print_errors) print(RED "WARN: " RST "Ninth x: %d y: %d unsolvable" NL, i/3, i%3);
+            if (print_errors) print(RED "WARN" RST ": Checker - ninth x: %d y: %d unsolvable" NL, i/3, i%3);
             return False;
         }
         if(!check_solvable_by_cells(s_possibilities_filled->rows[i].cells, print_errors)) {
-            if (print_errors) print(RED "WARN: " RST "Row %d unsolvable" NL, i);
+            if (print_errors) print(RED "WARN" RST ": Checker - row %d unsolvable" NL, i);
             return False;
         }
         if(!check_solvable_by_cells(s_possibilities_filled->cols[i].cells, print_errors)) {
-            if (print_errors) print(RED "WARN: " RST "Column %d unsolvable" NL, i);
+            if (print_errors) print(RED "WARN" RST ": Checker - column %d unsolvable" NL, i);
             return False;
         }
     }

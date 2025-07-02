@@ -1,6 +1,9 @@
 #pragma once
 
+#define WRN "\033[41;1;30m"
+#define YEL "\033[33m"
 #define RED "\033[31m"
+#define GRN "\033[32m"
 #define RST "\033[0m"
 
 #define s_TO_μs (1e6)
