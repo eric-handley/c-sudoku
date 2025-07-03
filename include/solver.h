@@ -17,15 +17,12 @@ void remove_candidates(Sudoku* s) {
     remove_candidates_by_house(s->boxes);
 }
 
-int fill_single_candidates(Sudoku* s, bool do_visible) {
-    int total_filled = 0;
+bool fill_single_candidates(Sudoku* s, bool do_visible) {
+    bool new = False;
     for_ij_09() {
-        Cell* c = s->boxes[i][j];
-        if (c->value) {
-            total_filled++;
-            continue;
-        }
-        if (__builtin_popcount(c->cand) == 1 || c->value) {
+        Cell* c = s->rows[i][j];
+        if (c->value) continue;
+        if (__builtin_popcount(c->cand) == 1) {
             c->value = c->cand;
             c->cand = ALL_F;
             if (do_visible) {
@@ -33,21 +30,61 @@ int fill_single_candidates(Sudoku* s, bool do_visible) {
                 print_sudoku(s);
                 sleep(0.1);
             }
-            total_filled++;
+            new = True;
         }
     }}
-    return total_filled;
+    return new;
+}
+
+bool fill_exclusive_candidates_by_house(Sudoku* s, Cell* houses[9][9], bool do_visible) {
+    bool new = False;
+    for_ij_09() {
+        Cell* c = houses[i][j];
+        bin possible = c->cand;
+        if (!possible) continue;
+        for_range_09(k) {
+            if (k == j) continue;
+            possible ^= (possible & houses[i][k]->cand);
+        }
+        if (possible) {
+            c->value = possible;
+            c->cand = ALL_F;
+            if (do_visible) {
+                system("clear");
+                print_sudoku(s);
+                sleep(0.1);
+            }
+            new = True;
+        }
+    }}
+    return new;
+}
+
+bool fill_exclusive_candidates(Sudoku* s, bool do_visible) {
+    if (
+        fill_exclusive_candidates_by_house(s, s->boxes, do_visible) ||
+        fill_exclusive_candidates_by_house(s, s->rows, do_visible)  ||
+        fill_exclusive_candidates_by_house(s, s->cols, do_visible) 
+    ) return True;
+    return False;
+}
+
+int count_filled(Sudoku* s) {
+    int total = 0;
+    for_ij_09() {
+        total += (s->rows[i][j]->value > 0);
+    }}
+    return total;
 }
 
 bool solve(Sudoku* s, bool do_visible) {
-    int total_filled = 1, total_filled_last = 0;
-    while (total_filled < 81) {
-        total_filled_last = total_filled;
-        total_filled = 0;
+    while (count_filled(s) < 81) {
         remove_candidates(s);
-        total_filled = fill_single_candidates(s, do_visible);
-
-        if (total_filled_last == total_filled) return False;
+        if (
+            fill_single_candidates(s, do_visible) ||
+            fill_exclusive_candidates(s, do_visible)
+        ) continue;
+        return False;
     }
     return True;
 }
