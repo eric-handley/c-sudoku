@@ -1,57 +1,36 @@
 #pragma once
 
-#include <pthread.h>
-#include <stdlib.h>
+#include "binaryrepr.h"
 #include "bool.h"
 #include "printing.h"
 
-typedef enum StructureType {
-    COL,
-    ROW,
-    NINTH,
-    CELL,
-    SUDOKU
-} StructureType;
+#define box_idx(x, y)         ((x) + 3 * (y))
+#define x_y_to_box(x, y)      box_idx((x) / 3, (y) / 3)
+#define x_y_to_box_cell(x, y) box_idx((x) % 3, (y) % 3)
+
+#define bin int
 
 typedef struct Cell {
-    int value;
+    bin value;
+    bin cand;
     int x;
     int y;
-    bool given;
-    bool empty;
-    bool might_be[9];
 } Cell;
 
-typedef struct Ninth {
-    Cell* cells[3][3];
-    Cell* cells_lin[9];
-    pthread_t thread;
-} Ninth;
-
-typedef struct Row {
-    Cell* cells[9];
-} Row;
-
-typedef struct Col {
-    Cell* cells[9];
-} Col;
-
-typedef struct Sudoku
-{
-    Row rows[9];
-    Col cols[9];
-    Ninth ninths[3][3];
-    bool is_solved;
+typedef struct Sudoku {
+    Cell  cells[9][9][4];
+    Cell* rows [9][9];
+    Cell* cols [9][9];
+    Cell* boxes[9][9];
 } Sudoku;
 
 void print_sudoku(Sudoku* s) {
     print(T_BORDER NL);
     
-    for (int y = 0; y < 9; y++) {
+    for_range_09(y) {
         print(THICK_V_BAR);
-        for (int x = 0; x < 9; x++) {
-            // int val = s->cols[x].cells[y]->value;
-            int val = s->rows[y].cells[x]->value;
+        for_range_09(x) {
+            int val = D(s->cells[y][x]->value);
             print(CELL_PAD);
             if (val) printf("%d", val);
             else print (CELL_PAD);

@@ -1,5 +1,14 @@
 #pragma once
 
+#define _POSIX_C_SOURCE 199309L
+#define _GNU_SOURCE
+#include <unistd.h>
+#include <stdio.h>
+#include <time.h>
+#include <stdlib.h>
+
+typedef char* str;
+
 #define WRN "\033[41;1;30m"
 #define YEL "\033[33m"
 #define RED "\033[31m"
@@ -19,4 +28,3 @@
 #define THICK_V_BAR   "┃"
 #define THIN_V_BAR    "│"
 #define CELL_PAD      " "
-

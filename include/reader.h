@@ -1,6 +1,9 @@
+#pragma once
+
 #include <stdio.h>
-#include "sudoku.h"
+#include "binaryrepr.h"
 #include "bool.h"
+#include "sudoku.h"
 
 #define BUF_SIZE 65536
 #define PUZZLE_LINE_SIZE_BYTES 82
@@ -27,43 +30,31 @@ int count_lines(FILE* file)
     return counter;
 }
 
-void link_ninths(Sudoku* s) {
-    for (int i = 0; i < 81; i++) {
-        int x = (i % 9) % 3, y = (i % 9) / 3;
-        Ninth* n = &s->ninths[y][x];
-        int row_idx[3] = {3*y, 3*y+1, 3*y+2};
-        int col_idx[3] = {3*x, 3*x+1, 3*x+2};
-
-        x = (i / 9) % 3, y = (i / 9) / 3;
-        int sx = col_idx[y];
-        int sy = row_idx[x];
-        n->cells[x][y] = s->cols[sx].cells[sy];
-        n->cells_lin[(3*x) + y] = s->cols[sx].cells[sy];
-    }
+void link_boxes (Sudoku* s) {
+    for_ij_09() {
+        s->boxes[x_y_to_box(i,j)][x_y_to_box_cell(i,j)] = s->cells[j][i];
+    }}
 }
 
-void read_puzzle(char* filename, int line_number, Sudoku* output) {
+void read_puzzle(str filename, int line_number, Sudoku* output) {
     FILE* puzzle_file = fopen(filename, "r");
     fseek(puzzle_file, line_number * PUZZLE_LINE_SIZE_BYTES, 0);
-    output->is_solved = False;
 
     int x = 0, y = 0;
     for (char c = getc(puzzle_file); c != '\n'; c = getc(puzzle_file)) {
-        if (c == '.') c = '0';
-        int val = ((int)c - 48);
+        if (c == '.') {
+            output->cells[y][x]->value = 0;
+            output->cells[y][x]->cand  = ALL_T;
+        } else {
+            output->cells[y][x]->value = B(((int)c - 48));
+            output->cells[y][x]->cand  = ALL_F;
+        }
+        
+        output->cells[y][x]->x = x;
+        output->cells[y][x]->y = y;
 
-        Cell* new_cell = (Cell*)malloc(sizeof(Cell));
-        *new_cell = (Cell){
-            .value = val,
-            .x = x,
-            .y = y,
-            .given = (val != 0),
-            .empty = (val == 0),
-            .might_be = {1,1,1,1,1,1,1,1,1}
-        };
-
-        output->cols[x].cells[y] = new_cell;
-        output->rows[y].cells[x] = new_cell;
+        output->rows[y][x] = output->cells[y][x];
+        output->cols[x][y] = output->cells[y][x];
 
         x++;
         if (x == 9) {
@@ -74,5 +65,5 @@ void read_puzzle(char* filename, int line_number, Sudoku* output) {
 
     fclose(puzzle_file);
 
-    link_ninths(output);
+    link_boxes(output);
 }
