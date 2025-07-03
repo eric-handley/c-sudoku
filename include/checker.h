@@ -2,8 +2,6 @@
 #include "binaryrepr.h"
 #include "bool.h"
 
-#define CORRECT_SUM 45
-
 bool check_solvable_by_houses(Cell* houses[9][9]) {
     for_range_09(i) {
         bin possible = ALL_F;
@@ -29,7 +27,7 @@ bool double_check_houses(Cell* houses[9][9]) {
     for_range_09(i) {
         bin vals = ALL_F;
         for_range_09(j) {
-            vals |= houses[i][j]->value; 
+            vals ^= houses[i][j]->value; 
         }
         if (vals != ALL_T) return False;
     }
