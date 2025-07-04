@@ -8,7 +8,10 @@
 #define x_y_to_box(x, y)      box_idx((x) / 3, (y) / 3)
 #define x_y_to_box_cell(x, y) box_idx((x) % 3, (y) % 3)
 
-#define bin int
+#define or_col_cand(box, col_idx)  box[(col_idx)]->cand | box[(col_idx) + 3]->cand | box[(col_idx) + 6]->cand
+#define or_row_cand(box, row_idx)  box[3 * (row_idx)]->cand | box[3 * (row_idx) + 1]->cand | box[3 * (row_idx) + 2]->cand
+
+#define bin u_int16_t
 
 typedef struct Cell {
     bin value;

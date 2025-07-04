@@ -42,6 +42,10 @@ int main(int argc, char* argv[]) {
                     exit(1);
                 }
             }
+        } else if (f.stop_on_cant_solve) {
+            print_sudoku(s);
+            print("Puzzle %d could not be solved" NL, i);
+            exit(1);
         }
     }
 

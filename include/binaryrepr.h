@@ -4,6 +4,7 @@
 #define D(n) ((n) ? (__builtin_ctz(n) + 1) : 0)
 #define for_bdigit_in_range(i, j, itername) for (int itername = B(i); itername < B(j); itername = ((itername) ? (itername << 1) : 0b1))
 #define for_range(i, j, itername) for (int itername = i; itername < j; itername++)
+#define for_range_03(itername) for_range(0, 3, itername)
 #define for_range_09(itername) for_range(0, 9, itername)
 #define for_ij_09() for_range(0, 9, i) { for_range(0, 9, j)
 #define for_ijk_09() for_range(0, 9, i) { for_range(0, 9, j) { for_range(0, 9, k)

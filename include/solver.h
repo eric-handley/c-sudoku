@@ -73,6 +73,49 @@ bool fill_exclusive_candidates(Sudoku* s) {
     return False;
 }
 
+bin exclusive_box_col_row_cand(Cell** box, int idx, obj_type row_or_col) {
+    bin cand = (row_or_col == COL) ? or_col_cand(box, idx) : or_row_cand(box, idx); // All candidates for col/row i
+    for_range_03(i) {
+        if (idx == i) continue;
+        cand &= ~((row_or_col == COL) ? or_col_cand(box, i) : or_row_cand(box, i)); // Minus all candidates for other col/row
+    }
+    return cand;
+}
+
+bool remove_cand_from_house_if_not_in_box(Sudoku* s, bin cand, Cell** house, int box_idx) {
+    bool work = False;
+    for_range_09(i) {
+        Cell* c = house[i];
+        if (x_y_to_box(c->x, c->y) == box_idx) continue;
+        if (c->cand & cand) {
+            c->cand &= ~cand;
+            work = True;
+        }
+    }
+    return work;
+}
+
+bool row_column_elimination(Sudoku* s) {
+    bool work = False;
+    bin cand;
+    for_range_09(i) {
+        Cell** box = s->boxes[i];
+        for_range_03(j) {
+            cand = exclusive_box_col_row_cand(box, j, COL); // cand has any exclusive candidates for jth column of box i
+            if (cand) { // Remove cand from any cells in this column but /not/ in this box
+                int col_idx = box[j]->x;
+                work |= remove_cand_from_house_if_not_in_box(s, cand, s->cols[col_idx], i);
+            }
+            cand = exclusive_box_col_row_cand(box, j, ROW); // cand has any exclusive candidates for jth row of box i
+            if (cand) { // Remove cand from any cells in this row but /not/ in this box
+                int row_idx = box[j * 3]->y;
+                work |= remove_cand_from_house_if_not_in_box(s, cand, s->rows[row_idx], i);
+            }
+        }
+    }
+    return work;
+}
+
 int count_filled(Sudoku* s) {
     int total = 0;
     for_ij_09() {
@@ -85,8 +128,9 @@ bool solve(Sudoku* s) {
     while (count_filled(s) < 81) {
         remove_candidates(s);
         if (
-            fill_single_candidates(s) ||
-            fill_exclusive_candidates(s)
+            fill_single_candidates(s)    ||
+            fill_exclusive_candidates(s) ||
+            row_column_elimination(s)
         ) continue;
         return False;
     }
