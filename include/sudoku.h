@@ -24,6 +24,17 @@ typedef struct Sudoku {
     Cell* boxes[9][9];
 } Sudoku;
 
+typedef enum obj_type {
+    ROW,
+    COL,
+    BOX,
+    CELL,
+    VALUE,
+    CAND
+} obj_type;
+
+const str obj_type_str[6] = {"row", "column", "box", "cell", "value", "candidate"};
+
 void print_sudoku(Sudoku* s) {
     print(T_BORDER NL);
     

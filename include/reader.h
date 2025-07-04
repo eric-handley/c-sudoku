@@ -8,14 +8,19 @@
 #define BUF_SIZE 65536
 #define PUZZLE_LINE_SIZE_BYTES 82
 
-int count_lines(FILE* file)
+int count_lines(str filename)
 {
+    FILE* puzzle_file = fopen(filename, "r");
+    if (puzzle_file == NULL) {
+        perror("reader.h: count_lines()");
+        exit(1);
+    }
     char buf[BUF_SIZE];
     int counter = 0;
     for(;;)
     {
-        size_t res = fread(buf, 1, BUF_SIZE, file);
-        if (ferror(file))
+        size_t res = fread(buf, 1, BUF_SIZE, puzzle_file);
+        if (ferror(puzzle_file))
             return -1;
 
         int i;
@@ -23,10 +28,10 @@ int count_lines(FILE* file)
             if (buf[i] == '\n')
                 counter++;
 
-        if (feof(file))
+        if (feof(puzzle_file))
             break;
     }
-
+    fclose(puzzle_file);
     return counter;
 }
 
@@ -38,6 +43,10 @@ void link_boxes (Sudoku* s) {
 
 void read_puzzle(str filename, int line_number, Sudoku* output) {
     FILE* puzzle_file = fopen(filename, "r");
+    if (puzzle_file == NULL) {
+        perror("reader.h: read_puzzle()");
+        exit(1);
+    }
     fseek(puzzle_file, line_number * PUZZLE_LINE_SIZE_BYTES, 0);
 
     int x = 0, y = 0;
