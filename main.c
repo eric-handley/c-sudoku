@@ -5,51 +5,55 @@
 #include "include/bool.h"
 #include "include/solver.h"
 #include "include/checker.h"
+#include "include/flags.h"
 
 int main(int argc, char* argv[]) {
     
-    Sudoku* puzzle = (Sudoku*)malloc(sizeof(Sudoku));
+    Sudoku* s = (Sudoku*)malloc(sizeof(Sudoku));
     
     str filename;
     if (argc == 2) filename = argv[1];
-    else filename = "data/puzzles3_magictour_top1465";
+    else filename = f.puzzle_filename;
 
-    FILE* puzzlefile = fopen(filename, "r");
+    int start_range = (f.do_one_only == -1) ? 0 : f.do_one_only;
+    int end_range = (f.do_one_only == -1) ? count_lines(filename) : (f.do_one_only + 1);
 
-    float total_solved = 0;
-    float total_incorrect = 0;
-    float total_unsolvable = 0;
-    int total_puzzles = count_lines(puzzlefile);
+    int total_solved = 0, total_incorrect = 0, 
+        total_unsolvable = 0, total_puzzles = end_range - start_range;
 
-    bool do_visible = False;
+    clock_t t_start = clock();
     
-    fclose(puzzlefile);
-    clock_t start = clock();
-
-    for_range(0, total_puzzles, i) {
-        read_puzzle(filename, i, puzzle);
-        remove_candidates(puzzle);
+    for_range(start_range, end_range, i) {
+        read_puzzle(filename, i, s);
+        remove_candidates(s);
         
-        if (!is_solvable(puzzle)) {
+        if (f.check_solvable && !is_solvable(s)) {
             total_unsolvable++;
             continue;
         }
 
-        if(solve(puzzle, do_visible)) {
-            if (double_check(puzzle)) total_solved++;
-            else total_incorrect++;
+        if(solve(s)) {
+            if (!f.check_incorrect || double_check(s)) total_solved++;
+            else {
+                total_incorrect++;
+                if (f.stop_on_incorrect) {
+                    print_sudoku(s);
+                    print("Puzzle %d solved incorrectly" NL, i);
+                    exit(1);
+                }
+            }
         }
     }
 
-    clock_t end = clock();    
-    double cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
-    double puzzles_per_sec = total_puzzles / cpu_time_used;
-    double micro_sec_per_puzzle = (cpu_time_used * s_TO_μs) / total_puzzles;
+    clock_t t_end = clock();    
+    double cpu_time_used = ((double)(t_end - t_start)) / CLOCKS_PER_SEC;
+    double puzzles_per_sec = ((double)total_puzzles) / cpu_time_used;
+    double micro_sec_per_puzzle = (cpu_time_used * s_TO_μs) / ((double)total_puzzles);
 
     total_puzzles -= total_unsolvable;
-    int total_cant_solve = (int)(total_puzzles-total_solved);
-    float err_rate = (total_incorrect / total_puzzles) * 100;
-    float solve_rate = (total_solved / total_puzzles) * 100;
+    int total_cant_solve = total_puzzles - total_solved;
+    double err_rate = ((double)total_incorrect) / ((double)total_puzzles) * 100;
+    double solve_rate = ((double)total_solved) / ((double)total_puzzles) * 100;
 
     char* was_checked_str[2] = {RED "Not checked" RST, GRN "Checked" RST};
     char* colour_conditional[2] = {GRN, RED};
@@ -66,13 +70,15 @@ int main(int argc, char* argv[]) {
         "Total execution time: %.2f seconds (%.1f puz/s, %.1f μs/puz)" NL
         H_LINE_THICK NL NL, 
         filename,
-        (int)total_solved, 
-        (int)total_puzzles, 
+        total_solved, 
+        total_puzzles, 
+
         colour_conditional[total_cant_solve > 0], total_cant_solve, 
-        colour_conditional[(int)total_unsolvable > 0], (int)total_unsolvable, was_checked_str[True],
-        colour_conditional[(int)total_incorrect > 0], (int)total_incorrect, was_checked_str[True],
-        colour_conditional[err_rate > 0], err_rate,
-        colour_conditional[solve_rate < 100], solve_rate,
+        colour_conditional[total_unsolvable > 0], total_unsolvable, was_checked_str[f.check_solvable],
+        colour_conditional[total_incorrect > 0],  total_incorrect,  was_checked_str[f.check_incorrect],
+        colour_conditional[err_rate > 0],         err_rate,
+        colour_conditional[solve_rate < 100],     solve_rate,
+        
         cpu_time_used, puzzles_per_sec, micro_sec_per_puzzle
     );
 
