@@ -6,10 +6,10 @@
 
 bool check_solvable_by_houses(Cell* houses[9][9]) {
     for_ij_09() {
-        int popcount = __builtin_popcount(houses[i][j]->cand);
+        int popcount = popcount(houses[i][j]->cand);
         if (!houses[i][j]->value && !popcount) return False; // Cell has no candidates
 
-        bin digit_mask = B(j + 1);
+        bin digit_mask = base2(j + 1);
         int possible_positions = 0;
         for_range_09(k) {
             Cell* c = houses[i][k];
@@ -51,16 +51,31 @@ bool double_check(Sudoku* s) {
 
 bool double_check_step_houses(Cell* houses[9][9], obj_type o) {
     for_range_09(i) {
+        bin possible = ALL_F;
         bin vals = ALL_F;
         for_range_09(j) {
             if (vals & houses[i][j]->value) {
-                print(
-                    "%dth %s filled incorrectly on step %d: more than one %d" NL,
-                    i, obj_type_str[o], f.total_visible_steps, D(houses[i][j]->value)
-                );
+                if (f.stop_on_incorrect) {
+                    print(
+                        "%s %d filled incorrectly on step %d: more than one %d" NL,
+                        obj_type_str_capt[o], i+1, f.total_steps, base10(houses[i][j]->value)
+                    );
+                    sleep(2);
+                }
                 return False; 
             }
             vals |= houses[i][j]->value;
+            possible |= (houses[i][j]->value | houses[i][j]->cand);
+        }
+        if (possible != ALL_T) {
+            if (f.stop_on_incorrect) {
+                print(
+                    "%s %d filled incorrectly on step %d: no possible placement of %d" NL,
+                    obj_type_str_capt[o], i+1, f.total_steps, base10(get_lowest_cand(~possible))
+                );
+                sleep(2);
+            }
+            return False;
         }
     }
     return True;

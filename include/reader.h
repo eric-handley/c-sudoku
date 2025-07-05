@@ -37,7 +37,7 @@ int count_lines(str filename)
 
 void link_boxes (Sudoku* s) {
     for_ij_09() {
-        s->boxes[x_y_to_box(i,j)][x_y_to_box_cell(i,j)] = s->cells[j][i];
+        s->boxes[x_y_to_box(i,j)][x_y_to_box_cell(i,j)] = &s->cells[j][i];
     }}
 }
 
@@ -52,18 +52,19 @@ void read_puzzle(str filename, int line_number, Sudoku* output) {
     int x = 0, y = 0;
     for (char c = getc(puzzle_file); c != '\n'; c = getc(puzzle_file)) {
         if (c == '.') {
-            output->cells[y][x]->value = 0;
-            output->cells[y][x]->cand  = ALL_T;
+            output->cells[y][x].value = 0;
+            output->cells[y][x].cand  = ALL_T;
         } else {
-            output->cells[y][x]->value = B(((int)c - 48));
-            output->cells[y][x]->cand  = ALL_F;
+            output->cells[y][x].value = base2(((int)c - 48));
+            output->cells[y][x].cand  = ALL_F;
         }
         
-        output->cells[y][x]->x = x;
-        output->cells[y][x]->y = y;
+        output->cells[y][x].x = x;
+        output->cells[y][x].y = y;
+        output->cells[y][x].marker = 0;
 
-        output->rows[y][x] = output->cells[y][x];
-        output->cols[x][y] = output->cells[y][x];
+        output->rows[y][x] = &output->cells[y][x];
+        output->cols[x][y] = &output->cells[y][x];
 
         x++;
         if (x == 9) {
