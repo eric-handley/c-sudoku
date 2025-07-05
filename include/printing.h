@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef char* str;
 
@@ -28,3 +29,8 @@ typedef char* str;
 #define THICK_V_BAR   "┃"
 #define THIN_V_BAR    "│"
 #define CELL_PAD      " "
+
+#define T_BORDER_CAND      "┏━━━━━━━┯━━━━━━━┯━━━━━━━┳━━━━━━━┯━━━━━━━┯━━━━━━━┳━━━━━━━┯━━━━━━━┯━━━━━━━┓"
+#define B_BORDER_CAND      "┗━━━━━━━┷━━━━━━━┷━━━━━━━┻━━━━━━━┷━━━━━━━┷━━━━━━━┻━━━━━━━┷━━━━━━━┷━━━━━━━┛"
+#define THICK_ROW_SEP_CAND "┣━━━━━━━┿━━━━━━━┿━━━━━━━╋━━━━━━━┿━━━━━━━┿━━━━━━━╋━━━━━━━┿━━━━━━━┿━━━━━━━┫"
+#define THIN_ROW_SEP_CAND  "┠───────┼───────┼───────╂───────┼───────┼───────╂───────┼───────┼───────┨"

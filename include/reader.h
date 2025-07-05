@@ -61,7 +61,6 @@ void read_puzzle(str filename, int line_number, Sudoku* output) {
         
         output->cells[y][x].x = x;
         output->cells[y][x].y = y;
-        output->cells[y][x].marker = 0;
 
         output->rows[y][x] = &output->cells[y][x];
         output->cols[x][y] = &output->cells[y][x];

@@ -8,15 +8,14 @@
 #include "include/flags.h"
 
 int main(int argc, char* argv[]) {
-    
     Sudoku* s = (Sudoku*)malloc(sizeof(Sudoku));
     
     str filename;
     if (argc == 2) filename = argv[1];
     else filename = f.puzzle_filename;
 
-    int start_range = (f.do_one_only == -1) ? 0 : f.do_one_only;
-    int end_range = (f.do_one_only == -1) ? count_lines(filename) : (f.do_one_only + 1);
+    int start_range = (f.one_puzzle_only == -1) ? 0 : f.one_puzzle_only;
+    int end_range = (f.one_puzzle_only == -1) ? count_lines(filename) : (f.one_puzzle_only + 1);
 
     int total_solved = 0, total_incorrect = 0, 
         total_unsolvable = 0, total_puzzles = end_range - start_range;
@@ -32,7 +31,7 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        if(solve(s)) {
+        if(solve(s, 0)) {
             if (!f.check_incorrect || double_check(s)) total_solved++;
             else {
                 total_incorrect++;
@@ -53,6 +52,9 @@ int main(int argc, char* argv[]) {
     double cpu_time_used = ((double)(t_end - t_start)) / CLOCKS_PER_SEC;
     double puzzles_per_sec = ((double)total_puzzles) / cpu_time_used;
     double micro_sec_per_puzzle = (cpu_time_used * s_TO_μs) / ((double)total_puzzles);
+    
+    double steps_per_sec = ((double)f.total_steps) / cpu_time_used;
+    double micro_sec_per_step = (cpu_time_used * s_TO_μs) / ((double)f.total_steps);
 
     total_puzzles -= total_unsolvable;
     int total_cant_solve = total_puzzles - total_solved;
@@ -72,7 +74,8 @@ int main(int argc, char* argv[]) {
         " - Error rate: %s%.3f%%" RST NL
         " - Solve rate: %s%.3f%%" RST NL
         "Total execution time: %.2f seconds (%.1f puz/s, %.1f μs/puz)" NL
-        H_LINE_THICK NL NL, 
+        "Total steps:          %d (%.0f step/s, %.2f μs/step)" NL
+        H_LINE_THICK NL NL,
         filename,
         total_solved, 
         total_puzzles, 
@@ -83,8 +86,8 @@ int main(int argc, char* argv[]) {
         colour_conditional[err_rate > 0],         err_rate,
         colour_conditional[solve_rate < 100],     solve_rate,
         
-        cpu_time_used, puzzles_per_sec, micro_sec_per_puzzle
+        cpu_time_used, puzzles_per_sec, micro_sec_per_puzzle,
+        f.total_steps, steps_per_sec,   micro_sec_per_step
     );
-
     return 0;
 }
