@@ -4,7 +4,7 @@
 #include "flags.h"
 #include "checker.h"
 
-bool step(Sudoku* s, int recurse_depth, bool do_recurse);
+bool step(Sudoku* s, int recurse_depth);
 bool solve(Sudoku* s, int recurse_depth);
 
 int count_filled(Sudoku* s) {
@@ -184,21 +184,21 @@ bool solve_recursive(Sudoku* s, int depth) {
     return False;
 }
 
-bool step(Sudoku* s, int recurse_depth, bool do_recurse) {
+bool step(Sudoku* s, int recurse_depth) {
     f.total_steps++;
     if (
         remove_candidates(s)         ||
         fill_single_candidates(s)    ||
         fill_exclusive_candidates(s) ||
         row_column_elimination(s)    ||
-        (do_recurse && solve_recursive(s, recurse_depth))
+        solve_recursive(s, recurse_depth)
     ) return True;
     return False;
 }
 
 bool solve(Sudoku* s, int recurse_depth) {
     while (count_filled(s) < 81) {
-        if (step(s, recurse_depth, True)) continue;
+        if (step(s, recurse_depth)) continue;
         return False;
     }
     return True;
