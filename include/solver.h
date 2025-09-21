@@ -17,9 +17,12 @@ int count_filled(Sudoku* s) {
 
 void step_check_and_print(Sudoku* s) {
     if (f.display_solve) {
-        system("clear");
-        print_sudoku(s);
-        sleep(f.display_step_time);
+        if(system("clear")) {
+            print("Could not clear console...\n");
+        } else {
+            print_sudoku(s);
+            sleep(f.display_step_time);
+        }
     };
     if(f.double_check_steps && !double_check_step(s)) exit(1);
 }
